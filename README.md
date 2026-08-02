@@ -4,7 +4,7 @@ Eine Notizen-App mit Angular-Frontend und Django-REST-Backend. Notizen anlegen,
 bearbeiten, als wichtig markieren und in den Papierkorb verschieben.
 
 | | |
-|---|---|
+| --- | --- |
 | **Frontend** | Angular 17 (Standalone Components) |
 | **Backend** | Django 6 + Django REST Framework 3.17 |
 | **Datenbank** | SQLite |
@@ -17,6 +17,7 @@ bearbeiten, als wichtig markieren und in den Papierkorb verschieben.
 Voraussetzung: Docker mit Compose v2 oder neuer.
 
 ```bash
+cp .env.example .env      # einmalig, danach SECRET_KEY eintragen
 docker compose up -d --build
 ```
 
@@ -50,6 +51,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env            # einmalig, danach SECRET_KEY eintragen
 python manage.py migrate
 python manage.py runserver
 ```
@@ -62,9 +64,9 @@ npm install
 npm start
 ```
 
-> Das Backend muss auf Port **8000** laufen. Die API-URL steht fest in
-> `frontend/src/app/services/note-list.service.ts` und es gibt keine
-> `environment`-Dateien in diesem Projekt.
+> Der Backend-Port muss zur `apiUrl` in
+> `frontend/src/environments/environment.development.ts` passen. Standard ist
+> beidseitig **8000**.
 
 ---
 
@@ -73,7 +75,7 @@ npm start
 Basis-URL: `http://127.0.0.1:8000/`
 
 | Methode | Endpoint | Beschreibung |
-|---|---|---|
+| --- | --- | --- |
 | `GET` | `/notes/` | Alle Notizen als flaches Array |
 | `POST` | `/notes/` | Neue Notiz anlegen |
 | `GET` | `/notes/{id}/` | Einzelne Notiz |
@@ -96,7 +98,7 @@ Alle Endpoints brauchen den **abschließenden Slash**.
 ```
 
 | Feld | Typ | Hinweis |
-|---|---|---|
+| --- | --- | --- |
 | `id` | Integer | Read-only, wird vom Server vergeben |
 | `title` | String | max. 200 Zeichen |
 | `content` | String | darf leer sein |
@@ -118,19 +120,23 @@ curl -X POST http://127.0.0.1:8000/notes/ \
 
 ## Projektstruktur
 
-```
+```text
 da-notes/
 ├── compose.yml              # Docker-Stack: Frontend + Backend
+├── .env.example             # Vorlage für .env (Ports, Django)
 ├── backend/
 │   ├── core/                # Django-Projekt (settings, urls)
 │   ├── notes_app/           # Model, Serializer, ViewSet, URLs
+│   ├── .env.example         # Vorlage für Betrieb ohne Docker
 │   ├── requirements.txt
 │   └── Dockerfile
 └── frontend/
-    ├── src/app/
-    │   ├── services/        # NoteListService (HTTP-Aufrufe)
-    │   ├── interfaces/      # Note-Interface
-    │   └── note-list/       # Komponenten
+    ├── src/
+    │   ├── environments/    # apiUrl je Build-Konfiguration
+    │   └── app/
+    │       ├── services/    # NoteListService (HTTP-Aufrufe)
+    │       ├── interfaces/  # Note-Interface
+    │       └── note-list/   # Komponenten
     └── Dockerfile
 ```
 
@@ -138,17 +144,43 @@ da-notes/
 
 ## Konfiguration
 
-Das Backend liest folgende Umgebungsvariablen. Ohne gesetzte Werte greifen die
-Defaults, die dem lokalen Entwicklungs-Setup entsprechen.
+Keine Zugangsdaten im Quellcode. Alles läuft über `.env`-Dateien, die per
+`.gitignore` ausgeschlossen sind. Vorlagen liegen als `.env.example` bei.
+
+| Datei | Gilt für | Im Repo |
+| --- | --- | --- |
+| `.env` | Docker-Stack (Ports, Django) | nein |
+| `.env.example` | Vorlage dazu | ja |
+| `backend/.env` | Backend ohne Docker | nein |
+| `backend/.env.example` | Vorlage dazu | ja |
+
+Django lädt `backend/.env`, danach `backend/.env.local` (überschreibt). Für den
+Docker-Betrieb reicht die `.env` im Projektroot.
 
 | Variable | Default | Zweck |
-|---|---|---|
+| --- | --- | --- |
+| `DJANGO_SECRET_KEY` | — | Signiert Sessions und CSRF-Tokens |
 | `DJANGO_DEBUG` | `1` | Debug-Modus (`0` schaltet ab) |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Erlaubte Hosts, kommagetrennt |
 | `DJANGO_DB_PATH` | `backend/db.sqlite3` | Pfad zur SQLite-Datei |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200` | Erlaubte Frontend-Origins |
+| `BACKEND_PORT` | `8000` | Host-Port des Backends (nur Docker) |
+| `FRONTEND_PORT` | `4200` | Host-Port des Frontends (nur Docker) |
 
-Siehe `backend/.env.example`. Die Werte für Docker stehen in `compose.yml`.
+`DJANGO_SECRET_KEY` hat bewusst keinen Default. Bei `DEBUG=1` greift ein
+Wegwerf-Key, bei `DEBUG=0` bricht der Start ab — so kann kein fehlender Key
+unbemerkt in Produktion landen. Neuen Key erzeugen:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+### Port ändern
+
+`BACKEND_PORT` in der `.env` setzen und dieselbe Zahl in
+`frontend/src/environments/environment.development.ts` als `apiUrl` eintragen.
+Beide Stellen müssen übereinstimmen, weil die Requests im Browser laufen und
+nicht im Container-Netzwerk.
 
 ---
 
@@ -160,7 +192,7 @@ Siehe `backend/.env.example`. Die Werte für Docker stehen in `compose.yml`.
 - **Die Datenbank liegt in einem Named Volume** (`/app/data/db.sqlite3`), nicht
   im gemounteten Quellordner. Deine lokale `backend/db.sqlite3` bleibt davon
   unberührt — beide Setups haben getrennte Daten.
-- **Der Browser spricht direkt mit `127.0.0.1:8000`**, nicht mit dem
+- **Der Browser spricht direkt mit dem Host-Port**, nicht mit dem
   Container-Hostnamen. Die HTTP-Requests laufen im Browser des Nutzers, nicht im
   Container, deshalb wird über die auf den Host gemappten Ports kommuniziert.
 
@@ -183,10 +215,11 @@ Danach unter <http://localhost:8000/admin/> anmelden.
 ## Sicherheitshinweis
 
 Dieses Projekt ist ein **Lernprojekt und für die lokale Entwicklung gedacht**.
-Für einen echten Deploy fehlen mindestens:
+Geheimnisse liegen ausschließlich in `.env`-Dateien, die nicht im Repository
+sind. Für einen echten Deploy fehlt trotzdem mindestens:
 
-- `SECRET_KEY` steht im Klartext in `core/settings.py` und gehört in eine
-  Umgebungsvariable
-- `DEBUG` ist standardmäßig aktiv und muss in Produktion aus
+- `DEBUG` ist standardmäßig aktiv und muss in Produktion auf `0`
 - Die API hat keine Authentifizierung — jeder kann alle Notizen lesen und ändern
 - SQLite eignet sich nicht für parallelen Produktionsbetrieb
+- Der in der Git-Historie enthaltene Alt-Key aus `settings.py` sollte als
+  kompromittiert gelten und niemals produktiv verwendet werden

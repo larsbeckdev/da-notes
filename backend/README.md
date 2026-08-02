@@ -9,15 +9,28 @@ der [Root-README](../README.md).
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env            # einmalig, danach SECRET_KEY eintragen
 python manage.py migrate
 python manage.py runserver
 ```
 
 Läuft dann auf <http://127.0.0.1:8000/>.
 
+## Konfiguration
+
+`settings.py` enthält keine Zugangsdaten. Beim Start lädt Django per
+`python-dotenv` zuerst `.env`, danach `.env.local` (überschreibt `.env`). Beide
+sind per `.gitignore` ausgeschlossen; `.env.example` dient als Vorlage.
+
+`DJANGO_SECRET_KEY` hat bewusst keinen Default: bei `DEBUG=1` greift ein
+Wegwerf-Key, bei `DEBUG=0` bricht der Start mit `ImproperlyConfigured` ab.
+Damit kann kein fehlender Key unbemerkt in Produktion gelangen.
+
+Die vollständige Variablenübersicht steht in der [Root-README](../README.md).
+
 ## Aufbau
 
-```
+```text
 backend/
 ├── core/
 │   ├── settings.py      # INSTALLED_APPS, CORS, Datenbank

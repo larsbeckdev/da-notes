@@ -13,8 +13,16 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env first, then .env.local on top so local overrides win.
+# Neither file is in version control; see .env.example for the template.
+load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env.local', override=True)
 
 
 def env_list(name: str, default: str) -> list[str]:
@@ -25,11 +33,21 @@ def env_list(name: str, default: str) -> list[str]:
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6+!20r*n*r1fi#pexnvehe^3(0wlqpg7$wserfhn8=#sji^=6$'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# Comes from the environment. Only in DEBUG mode do we fall back to a throwaway
+# key, so a missing key can never silently reach production.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY must be set when DEBUG is off. '
+            'See backend/.env.example.'
+        )
+    SECRET_KEY = 'django-insecure-dev-only-do-not-use-in-production'
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 

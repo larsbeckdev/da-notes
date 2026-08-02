@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Note } from '../interfaces/note.interface';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +11,8 @@ export class NoteListService {
   normalMarkedNotes: Note[] = [];
   trashNotes: Note[] = [];
 
-  // TODO: Trage hier die vollständige URL deiner API ein
-  apiEndpoint = 'http://127.0.0.1:8000/notes/';
+  // Konfiguriert in src/environments/, nicht hier fest eintragen.
+  apiEndpoint = environment.apiUrl;
 
   constructor(private http: HttpClient) {
     this.getNoteList();
