@@ -31,7 +31,7 @@ docker compose --profile prod up -d --build
 Danach erreichbar:
 
 - Frontend — <http://localhost:4200>
-- API — <http://localhost:8000/notes/>
+- API — <http://localhost:8000/notes/> (im `prod`-Profil unter `:4200/notes/`)
 - Django-Admin — <http://localhost:8000/admin/>
 
 Beim ersten Start dauert es einen Moment, bis Angular durchkompiliert hat. Da
@@ -238,6 +238,37 @@ Django die extern terminierte TLS-Verbindung erkennt.
 Der Dev-Server aus dem `dev`-Profil eignet sich nicht für eine öffentliche
 Domain: Vite lädt Module über interne `/@fs/`-Pfade und blockt fremde Hosts.
 
+### Profile nicht verwechseln
+
+Beide Frontend-Container belegen denselben Host-Port (`FRONTEND_PORT`), deshalb
+vor einem Profilwechsel den alten Container entfernen:
+
+```bash
+docker compose ps                    # welches Image läuft?
+docker compose stop frontend && docker compose rm -f frontend
+docker compose --profile prod up -d --build
+```
+
+`da-notes-frontend` ist das Dev-Image, `da-notes-frontend-prod` das Produktions-
+Image. Nach jeder Änderung unter `frontend/src` muss für den Domain-Betrieb neu
+gebaut werden.
+
+Läuft versehentlich `dev` hinter der Domain, zeigt sich ein verwirrendes Bild:
+Über die IP mit sichtbarem Port 4200 funktioniert die App, über die Domain
+nicht. Grund ist `environment.development.ts` — bei sichtbarem Port 4200 geht
+die Anfrage direkt ans Backend, hinter dem Proxy dagegen an den relativen Pfad
+`/notes/`, für den der Dev-Server nur `index.html` liefert.
+
+Bei Domain-Problemen zuerst lokal auf dem Docker-Host prüfen, um Repo-Seite und
+Proxy-Seite zu trennen:
+
+```bash
+curl -I -H "Host: da-notes.larsbeck.dev" http://localhost:4200/notes/
+```
+
+Erwartet wird `Content-Type: application/json`. Kommt `text/html`, läuft das
+falsche Profil.
+
 ---
 
 ## Admin-Zugang
@@ -256,12 +287,17 @@ Danach unter <http://localhost:8000/admin/> anmelden.
 
 ## Sicherheitshinweis
 
-Dieses Projekt ist ein **Lernprojekt und für die lokale Entwicklung gedacht**.
-Geheimnisse liegen ausschließlich in `.env`-Dateien, die nicht im Repository
-sind. Für einen echten Deploy fehlt trotzdem mindestens:
+Dieses Projekt ist ein **Lernprojekt**. Geheimnisse liegen ausschließlich in
+`.env`-Dateien, die nicht im Repository sind. Für einen echten Deploy fehlt
+trotzdem mindestens:
 
 - `DEBUG` ist standardmäßig aktiv und muss in Produktion auf `0`
 - Die API hat keine Authentifizierung — jeder kann alle Notizen lesen und ändern
 - SQLite eignet sich nicht für parallelen Produktionsbetrieb
 - Der in der Git-Historie enthaltene Alt-Key aus `settings.py` sollte als
   kompromittiert gelten und niemals produktiv verwendet werden
+
+> **Beim Umstellen auf `DJANGO_DEBUG=0`** muss `DJANGO_ALLOWED_HOSTS` in der
+> `.env` die öffentliche Domain enthalten. Solange `DEBUG=1` gilt, überschreibt
+> `settings.py` die Liste mit `['*']` — ein fehlender Eintrag fällt deshalb erst
+> auf, wenn Django plötzlich mit `400 Bad Request` antwortet.
