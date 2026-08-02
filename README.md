@@ -17,8 +17,15 @@ bearbeiten, als wichtig markieren und in den Papierkorb verschieben.
 Voraussetzung: Docker mit Compose v2 oder neuer.
 
 ```bash
-cp .env.example .env      # einmalig, danach SECRET_KEY eintragen
-docker compose up -d --build
+cp .env.example .env                          # einmalig, SECRET_KEY eintragen
+docker compose --profile dev up -d --build
+```
+
+Für den Betrieb hinter einer Domain gibt es ein zweites Profil, das ein
+kompiliertes Build von nginx ausliefern lässt:
+
+```bash
+docker compose --profile prod up -d --build
 ```
 
 Danach erreichbar:
@@ -32,7 +39,7 @@ Beim ersten Start dauert es einen Moment, bis Angular durchkompiliert hat. Da
 
 ```bash
 docker compose logs -f            # beide Container, Abbruch mit Strg+C
-docker compose logs -f frontend   # nur das Frontend
+docker compose logs -f backend    # nur das Backend
 docker compose ps                 # Status und Ports
 ```
 
@@ -164,6 +171,7 @@ Docker-Betrieb reicht die `.env` im Projektroot.
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Erlaubte Hosts, kommagetrennt |
 | `DJANGO_DB_PATH` | `backend/db.sqlite3` | Pfad zur SQLite-Datei |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200` | Erlaubte Frontend-Origins |
+| `CSRF_TRUSTED_ORIGINS` | `https://da-notes.larsbeck.dev` | Öffentliche HTTPS-Adressen hinter dem Proxy |
 | `BACKEND_PORT` | `8000` | Host-Port des Backends (nur Docker) |
 | `FRONTEND_PORT` | `4200` | Host-Port des Frontends (nur Docker) |
 
@@ -195,6 +203,40 @@ nicht im Container-Netzwerk.
 - **Der Browser spricht direkt mit dem Host-Port**, nicht mit dem
   Container-Hostnamen. Die HTTP-Requests laufen im Browser des Nutzers, nicht im
   Container, deshalb wird über die auf den Host gemappten Ports kommuniziert.
+
+---
+
+## Betrieb hinter einer Domain
+
+Das `prod`-Profil kompiliert Angular und liefert das Ergebnis über nginx aus.
+Dieser Container reicht `/notes/` und `/admin/` selbst an Django weiter, deshalb
+muss der vorgelagerte Webserver nur auf einen einzigen Port weiterleiten.
+
+```bash
+docker compose --profile prod up -d --build
+```
+
+Beim vorgelagerten nginx (etwa über ISPConfig) genügt damit ein Block:
+
+```nginx
+location ~ / {
+    proxy_pass http://10.80.0.195:4200;
+
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Ssl   on;
+    access_log off;
+}
+```
+
+Die öffentliche Adresse muss in `CSRF_TRUSTED_ORIGINS` stehen, sonst lehnt
+Django schreibende Zugriffe ab. Der Header `X-Forwarded-Proto` ist nötig, damit
+Django die extern terminierte TLS-Verbindung erkennt.
+
+Der Dev-Server aus dem `dev`-Profil eignet sich nicht für eine öffentliche
+Domain: Vite lädt Module über interne `/@fs/`-Pfade und blockt fremde Hosts.
 
 ---
 
