@@ -51,6 +51,11 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# Im Entwicklungsmodus jeden Host akzeptieren, damit der Zugriff über die
+# LAN-IP nicht bei jedem DHCP-Wechsel nachgepflegt werden muss.
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+
 
 # Application definition
 
@@ -161,3 +166,13 @@ CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:4200,http://127.0.0.1:4200',
 )
+
+# Zusätzlich private Netzwerkadressen erlauben, damit die App auch über die
+# LAN-IP des Rechners aufgerufen werden kann (z. B. Test vom Handy). Greift nur
+# im Entwicklungsmodus; die IP-Bereiche stammen aus RFC 1918.
+if DEBUG:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r'^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$',
+        r'^http://192\.168\.\d{1,3}\.\d{1,3}:\d+$',
+        r'^http://172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:\d+$',
+    ]
