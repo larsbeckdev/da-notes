@@ -1,12 +1,20 @@
 // Konfiguration für die lokale Entwicklung (`ng serve`).
 //
-// Die API-Host wird aus der Adresse abgeleitet, unter der die App im Browser
-// geöffnet ist. Damit funktioniert sowohl http://localhost:4200 als auch der
-// Aufruf über die Netzwerk-IP, ohne dass hier etwas angepasst werden muss.
-// Nur der Port ist fest und muss zu BACKEND_PORT aus der .env passen.
+// Hinter einem Reverse-Proxy (nginx) liegt die API unter demselben Origin wie
+// die App, deshalb genügt ein relativer Pfad. Beim direkten Zugriff auf den
+// Dev-Server ohne Proxy fehlt diese Weiterleitung, dort wird der Backend-Port
+// aus der aufgerufenen Adresse abgeleitet.
+//
+// Erkennungsmerkmal: der Dev-Server läuft auf FRONTEND_PORT, ein Proxy
+// dagegen auf 80/443 ohne sichtbaren Port.
+const devServerPort = '4200';
 const backendPort = 8300;
+
+const isDirectDevServer = window.location.port === devServerPort;
 
 export const environment = {
   production: false,
-  apiUrl: `http://${window.location.hostname}:${backendPort}/notes/`,
+  apiUrl: isDirectDevServer
+    ? `http://${window.location.hostname}:${backendPort}/notes/`
+    : '/notes/',
 };

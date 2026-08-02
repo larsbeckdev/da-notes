@@ -159,12 +159,26 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Hinter einem Reverse-Proxy (nginx) kommt die TLS-Terminierung von aussen.
+# Ohne diesen Header haelt Django die Anfrage faelschlich fuer unverschluesselt
+# und weist POST-Requests wegen fehlender CSRF-Herkunft ab.
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Domains, unter denen die App ueber HTTPS erreichbar ist. Muss die
+# oeffentliche Adresse enthalten, sonst schlaegt die CSRF-Pruefung fehl.
+CSRF_TRUSTED_ORIGINS = env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://da-notes.larsbeck.dev',
+)
+
+
 # CORS: allow the Angular dev server to call this API.
 # https://github.com/adamchainz/django-cors-headers
 
 CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:4200,http://127.0.0.1:4200',
+    'http://localhost:4200,http://127.0.0.1:4200,https://da-notes.larsbeck.dev',
 )
 
 # Zusätzlich private Netzwerkadressen erlauben, damit die App auch über die
