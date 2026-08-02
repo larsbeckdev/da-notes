@@ -17,7 +17,7 @@ bearbeiten, als wichtig markieren und in den Papierkorb verschieben.
 Voraussetzung: Docker mit Compose v2 oder neuer.
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 Danach erreichbar:
@@ -25,6 +25,15 @@ Danach erreichbar:
 - Frontend — <http://localhost:4200>
 - API — <http://localhost:8000/notes/>
 - Django-Admin — <http://localhost:8000/admin/>
+
+Beim ersten Start dauert es einen Moment, bis Angular durchkompiliert hat. Da
+`-d` im Hintergrund läuft, siehst du den Fortschritt über die Logs:
+
+```bash
+docker compose logs -f            # beide Container, Abbruch mit Strg+C
+docker compose logs -f frontend   # nur das Frontend
+docker compose ps                 # Status und Ports
+```
 
 Beenden mit `docker compose down`. Der Zusatz `-v` löscht auch die Datenbank.
 
