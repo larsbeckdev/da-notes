@@ -11,7 +11,7 @@ export class NoteListService {
   normalMarkedNotes: Note[] = [];
   trashNotes: Note[] = [];
 
-  // Konfiguriert in src/environments/, nicht hier fest eintragen.
+  // Configured in src/environments/, do not hardcode it here.
   apiEndpoint = environment.apiUrl;
 
   constructor(private http: HttpClient) {

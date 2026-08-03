@@ -1,12 +1,12 @@
-// Konfiguration für die lokale Entwicklung (`ng serve`).
+// Configuration for local development (`ng serve`).
 //
-// Hinter einem Reverse-Proxy (nginx) liegt die API unter demselben Origin wie
-// die App, deshalb genügt ein relativer Pfad. Beim direkten Zugriff auf den
-// Dev-Server ohne Proxy fehlt diese Weiterleitung, dort wird der Backend-Port
-// aus der aufgerufenen Adresse abgeleitet.
+// Behind a reverse proxy (nginx) the API lives on the same origin as the app,
+// so a relative path is enough. When hitting the dev server directly without a
+// proxy that forwarding is missing, so the backend port is derived from the
+// address the app was opened with.
 //
-// Erkennungsmerkmal: der Dev-Server läuft auf FRONTEND_PORT, ein Proxy
-// dagegen auf 80/443 ohne sichtbaren Port.
+// Telltale sign: the dev server runs on FRONTEND_PORT, whereas a proxy runs on
+// 80/443 without a visible port.
 const devServerPort = '4200';
 const backendPort = 8300;
 

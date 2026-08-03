@@ -1,7 +1,7 @@
 # DANotes Backend
 
-Django-REST-API für die DANotes-App. Die übergeordnete Dokumentation steht in
-der [Root-README](../README.md).
+Django REST API for the DANotes app. The overarching documentation lives in the
+[root README](../README.md).
 
 ## Setup
 
@@ -9,32 +9,32 @@ der [Root-README](../README.md).
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env            # einmalig, danach SECRET_KEY eintragen
+cp .env.example .env            # once, then fill in SECRET_KEY
 python manage.py migrate
 python manage.py runserver
 ```
 
-Läuft dann auf <http://127.0.0.1:8000/>.
+Then runs on <http://127.0.0.1:8000/>.
 
-## Konfiguration
+## Configuration
 
-`settings.py` enthält keine Zugangsdaten. Beim Start lädt Django per
-`python-dotenv` zuerst `.env`, danach `.env.local` (überschreibt `.env`). Beide
-sind per `.gitignore` ausgeschlossen; `.env.example` dient als Vorlage.
+`settings.py` contains no credentials. On startup Django loads `.env` first via
+`python-dotenv`, then `.env.local` (which overrides `.env`). Both are excluded
+via `.gitignore`; `.env.example` serves as the template.
 
-`DJANGO_SECRET_KEY` hat bewusst keinen Default: bei `DEBUG=1` greift ein
-Wegwerf-Key, bei `DEBUG=0` bricht der Start mit `ImproperlyConfigured` ab.
-Damit kann kein fehlender Key unbemerkt in Produktion gelangen.
+`DJANGO_SECRET_KEY` deliberately has no default: with `DEBUG=1` a throwaway key
+kicks in, with `DEBUG=0` startup aborts with `ImproperlyConfigured`. That way a
+missing key can never silently reach production.
 
-Die vollständige Variablenübersicht steht in der [Root-README](../README.md).
+The full list of variables is in the [root README](../README.md).
 
-## Aufbau
+## Layout
 
 ```text
 backend/
 ├── core/
-│   ├── settings.py      # INSTALLED_APPS, CORS, Datenbank
-│   └── urls.py          # bindet notes_app.urls ein
+│   ├── settings.py      # INSTALLED_APPS, CORS, database
+│   └── urls.py          # includes notes_app.urls
 ├── notes_app/
 │   ├── models.py        # Note
 │   ├── serializers.py   # NoteSerializer
@@ -44,43 +44,42 @@ backend/
 └── manage.py
 ```
 
-Das Routing übernimmt der `DefaultRouter` von DRF. Aus der einen Registrierung
-`router.register(r'notes', NoteViewSet)` entstehen alle CRUD-Routen.
+Routing is handled by DRF's `DefaultRouter`. The single registration
+`router.register(r'notes', NoteViewSet)` produces all CRUD routes.
 
-## Wichtige Design-Entscheidungen
+## Key design decisions
 
-**Keine Pagination.** Der Angular-Service ruft `data.filter(...)` direkt auf der
-Antwort auf. Eine Pagination-Envelope wie `{count, results}` würde das Frontend
-zur Laufzeit brechen, deshalb ist bewusst keine `DEFAULT_PAGINATION_CLASS`
-gesetzt.
+**No pagination.** The Angular service calls `data.filter(...)` directly on the
+response. A pagination envelope like `{count, results}` would break the frontend
+at runtime, so no `DEFAULT_PAGINATION_CLASS` is set on purpose.
 
-**`created_at` ist nicht im Serializer.** Das Model führt das Feld, um nach
-"neueste zuerst" zu sortieren. Im JSON taucht es nicht auf, weil das
-`Note`-Interface im Frontend es nicht kennt und `updateNote()` das Objekt per
-PUT vollständig zurückschickt.
+**`created_at` is not in the serializer.** The model keeps the field to sort by
+"newest first". It does not show up in the JSON, because the `Note` interface in
+the frontend does not know it and `updateNote()` sends the whole object back via
+PUT.
 
-**`id` ist eine Zahl, kein String.** Das TypeScript-Interface deklariert
-`id?: string`, DRF liefert bei `BigAutoField` aber einen Integer. Unkritisch, da
-die URL per Template-String gebaut wird und TypeScript JSON zur Laufzeit nicht
-prüft.
+**`id` is a number, not a string.** The TypeScript interface declares
+`id?: string`, but DRF returns an integer for `BigAutoField`. Harmless, since
+the URL is built via a template string and TypeScript does not check JSON at
+runtime.
 
-## Nützliche Befehle
+## Useful commands
 
 ```bash
-python manage.py createsuperuser     # Admin-Account
-python manage.py makemigrations      # nach Model-Änderungen
+python manage.py createsuperuser     # admin account
+python manage.py makemigrations      # after model changes
 python manage.py migrate
-python manage.py check               # Konfiguration prüfen
+python manage.py check               # verify configuration
 python manage.py shell
 ```
 
-Die Browsable API von DRF ist unter <http://127.0.0.1:8000/notes/> im Browser
-erreichbar und eignet sich zum manuellen Testen.
+DRF's browsable API is reachable in the browser at
+<http://127.0.0.1:8000/notes/> and is handy for manual testing.
 
 ## Tests
 
-Aktuell sind keine Tests vorhanden — `notes_app/tests.py` ist die leere
-Scaffold-Datei aus `startapp`.
+There are currently no tests — `notes_app/tests.py` is the empty scaffold file
+from `startapp`.
 
 ```bash
 python manage.py test

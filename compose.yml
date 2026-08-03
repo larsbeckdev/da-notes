@@ -1,9 +1,9 @@
-# Werte kommen aus der .env im selben Verzeichnis (siehe .env.example).
-# Die Defaults nach ":-" greifen, wenn keine .env vorhanden ist.
+# Values come from the .env in this directory (see .env.example).
+# The defaults after ":-" apply when no .env is present.
 #
-# Zwei Betriebsarten:
-#   docker compose --profile dev  up -d --build   Hot Reload zum Entwickeln
-#   docker compose --profile prod up -d --build   Statisches Build fuer die Domain
+# Two modes of operation:
+#   docker compose --profile dev  up -d --build   hot reload for development
+#   docker compose --profile prod up -d --build   static build for the domain
 services:
   backend:
     build: ./backend
@@ -17,7 +17,7 @@ services:
       # shadowed by the bind mount above.
       - backend_data:/app/data
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY fehlt - .env.example nach .env kopieren}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is missing - copy .env.example to .env}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,backend}
       DJANGO_DB_PATH: /app/data/db.sqlite3
@@ -28,7 +28,7 @@ services:
       sh -c "python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
 
-  # Entwicklung: Angular-Dev-Server mit Hot Reload.
+  # Development: Angular dev server with hot reload.
   frontend:
     profiles: ["dev"]
     build: ./frontend
@@ -43,9 +43,9 @@ services:
     depends_on:
       - backend
 
-  # Betrieb: kompiliertes Angular-Build, ausgeliefert von nginx. Dieser
-  # Container proxyt /notes/ und /admin/ selbst an das Backend, deshalb muss
-  # der vorgelagerte Server nur auf diesen einen Port weiterleiten.
+  # Production: compiled Angular build served by nginx. This container proxies
+  # /notes/ and /admin/ to the backend itself, so the upstream server only has
+  # to forward to this single port.
   frontend-prod:
     profiles: ["prod"]
     build:

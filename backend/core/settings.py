@@ -51,8 +51,8 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
-# Im Entwicklungsmodus jeden Host akzeptieren, damit der Zugriff über die
-# LAN-IP nicht bei jedem DHCP-Wechsel nachgepflegt werden muss.
+# Accept any host in development mode, so access via the LAN IP does not have
+# to be maintained again after every DHCP change.
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 
@@ -159,14 +159,14 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Hinter einem Reverse-Proxy (nginx) kommt die TLS-Terminierung von aussen.
-# Ohne diesen Header haelt Django die Anfrage faelschlich fuer unverschluesselt
-# und weist POST-Requests wegen fehlender CSRF-Herkunft ab.
+# Behind a reverse proxy (nginx) TLS is terminated externally. Without this
+# header Django wrongly treats the request as unencrypted and rejects POST
+# requests for having an untrusted CSRF origin.
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Domains, unter denen die App ueber HTTPS erreichbar ist. Muss die
-# oeffentliche Adresse enthalten, sonst schlaegt die CSRF-Pruefung fehl.
+# Domains under which the app is reachable over HTTPS. Must contain the public
+# address, otherwise the CSRF check fails.
 CSRF_TRUSTED_ORIGINS = env_list(
     'CSRF_TRUSTED_ORIGINS',
     'https://da-notes.larsbeck.dev',
@@ -181,9 +181,9 @@ CORS_ALLOWED_ORIGINS = env_list(
     'http://localhost:4200,http://127.0.0.1:4200,https://da-notes.larsbeck.dev',
 )
 
-# Zusätzlich private Netzwerkadressen erlauben, damit die App auch über die
-# LAN-IP des Rechners aufgerufen werden kann (z. B. Test vom Handy). Greift nur
-# im Entwicklungsmodus; die IP-Bereiche stammen aus RFC 1918.
+# Additionally allow private network addresses, so the app can also be opened
+# via the machine's LAN IP (e.g. testing from a phone). Development mode only;
+# the IP ranges come from RFC 1918.
 if DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         r'^http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$',

@@ -1,55 +1,55 @@
 # DANotes
 
-Eine Notizen-App mit Angular-Frontend und Django-REST-Backend. Notizen anlegen,
-bearbeiten, als wichtig markieren und in den Papierkorb verschieben.
+A notes app with an Angular frontend and a Django REST backend. Create and edit
+notes, mark them as important and move them to the trash.
 
 | | |
 | --- | --- |
-| **Frontend** | Angular 17 (Standalone Components) |
+| **Frontend** | Angular 17 (standalone components) |
 | **Backend** | Django 6 + Django REST Framework 3.17 |
-| **Datenbank** | SQLite |
-| **Betrieb** | Docker Compose oder lokal |
+| **Database** | SQLite |
+| **Deployment** | Docker Compose or local |
 
 ---
 
-## Schnellstart mit Docker
+## Quick start with Docker
 
-Voraussetzung: Docker mit Compose v2 oder neuer.
+Requirement: Docker with Compose v2 or newer.
 
 ```bash
-cp .env.example .env                          # einmalig, SECRET_KEY eintragen
+cp .env.example .env                          # once, fill in SECRET_KEY
 docker compose --profile dev up -d --build
 ```
 
-Für den Betrieb hinter einer Domain gibt es ein zweites Profil, das ein
-kompiliertes Build von nginx ausliefern lässt:
+For running behind a domain there is a second profile that serves a compiled
+build from nginx:
 
 ```bash
 docker compose --profile prod up -d --build
 ```
 
-Danach erreichbar:
+Reachable afterwards:
 
 - Frontend — <http://localhost:4200>
-- API — <http://localhost:8000/notes/> (im `prod`-Profil unter `:4200/notes/`)
-- Django-Admin — <http://localhost:8000/admin/>
+- API — <http://localhost:8000/notes/> (in the `prod` profile under `:4200/notes/`)
+- Django admin — <http://localhost:8000/admin/>
 
-Beim ersten Start dauert es einen Moment, bis Angular durchkompiliert hat. Da
-`-d` im Hintergrund läuft, siehst du den Fortschritt über die Logs:
+On the first start it takes a moment until Angular has compiled. Since `-d` runs
+in the background, you follow the progress through the logs:
 
 ```bash
-docker compose logs -f            # beide Container, Abbruch mit Strg+C
-docker compose logs -f backend    # nur das Backend
-docker compose ps                 # Status und Ports
+docker compose logs -f            # both containers, stop with Ctrl+C
+docker compose logs -f backend    # backend only
+docker compose ps                 # status and ports
 ```
 
-Beenden mit `docker compose down`. Der Zusatz `-v` löscht auch die Datenbank.
+Stop with `docker compose down`. Adding `-v` also deletes the database.
 
 ---
 
-## Schnellstart ohne Docker
+## Quick start without Docker
 
-Zwei Terminals.
+Two terminals.
 
 **Backend:**
 
@@ -58,7 +58,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env            # einmalig, danach SECRET_KEY eintragen
+cp .env.example .env            # once, then fill in SECRET_KEY
 python manage.py migrate
 python manage.py runserver
 ```
@@ -71,152 +71,151 @@ npm install
 npm start
 ```
 
-> Der Backend-Port muss zur `apiUrl` in
-> `frontend/src/environments/environment.development.ts` passen. Standard ist
-> beidseitig **8000**.
+> The backend port must match the `apiUrl` in
+> `frontend/src/environments/environment.development.ts`. The default on both
+> sides is **8000**.
 
 ---
 
 ## API
 
-Basis-URL: `http://127.0.0.1:8000/`
+Base URL: `http://127.0.0.1:8000/`
 
-| Methode | Endpoint | Beschreibung |
+| Method | Endpoint | Description |
 | --- | --- | --- |
-| `GET` | `/notes/` | Alle Notizen als flaches Array |
-| `POST` | `/notes/` | Neue Notiz anlegen |
-| `GET` | `/notes/{id}/` | Einzelne Notiz |
-| `PUT` | `/notes/{id}/` | Notiz vollständig ersetzen |
-| `PATCH` | `/notes/{id}/` | Notiz teilweise ändern |
-| `DELETE` | `/notes/{id}/` | Notiz löschen |
+| `GET` | `/notes/` | All notes as a flat array |
+| `POST` | `/notes/` | Create a new note |
+| `GET` | `/notes/{id}/` | A single note |
+| `PUT` | `/notes/{id}/` | Replace a note entirely |
+| `PATCH` | `/notes/{id}/` | Change a note partially |
+| `DELETE` | `/notes/{id}/` | Delete a note |
 
-Alle Endpoints brauchen den **abschließenden Slash**.
+All endpoints require the **trailing slash**.
 
-### Datenmodell
+### Data model
 
 ```json
 {
   "id": 1,
-  "title": "Einkaufsliste",
-  "content": "Milch, Brot, Kaffee",
+  "title": "Shopping list",
+  "content": "Milk, bread, coffee",
   "marked": false,
   "trash": false
 }
 ```
 
-| Feld | Typ | Hinweis |
+| Field | Type | Note |
 | --- | --- | --- |
-| `id` | Integer | Read-only, wird vom Server vergeben |
-| `title` | String | max. 200 Zeichen |
-| `content` | String | darf leer sein |
-| `marked` | Boolean | als wichtig markiert |
-| `trash` | Boolean | im Papierkorb |
+| `id` | Integer | Read-only, assigned by the server |
+| `title` | String | max. 200 characters |
+| `content` | String | may be empty |
+| `marked` | Boolean | marked as important |
+| `trash` | Boolean | in the trash |
 
-Das Frontend filtert die Liste anhand von `marked` und `trash` selbst — es gibt
-keine separaten Endpoints dafür.
+The frontend filters the list by `marked` and `trash` itself — there are no
+separate endpoints for that.
 
-### Beispiel
+### Example
 
 ```bash
 curl -X POST http://127.0.0.1:8000/notes/ \
   -H "Content-Type: application/json" \
-  -d '{"title":"Test","content":"Hallo","marked":false,"trash":false}'
+  -d '{"title":"Test","content":"Hello","marked":false,"trash":false}'
 ```
 
 ---
 
-## Projektstruktur
+## Project structure
 
 ```text
 da-notes/
-├── compose.yml              # Docker-Stack: Frontend + Backend
-├── .env.example             # Vorlage für .env (Ports, Django)
+├── compose.yml              # Docker stack: frontend + backend
+├── .env.example             # template for .env (ports, Django)
 ├── backend/
-│   ├── core/                # Django-Projekt (settings, urls)
-│   ├── notes_app/           # Model, Serializer, ViewSet, URLs
-│   ├── .env.example         # Vorlage für Betrieb ohne Docker
+│   ├── core/                # Django project (settings, urls)
+│   ├── notes_app/           # model, serializer, ViewSet, URLs
+│   ├── .env.example         # template for running without Docker
 │   ├── requirements.txt
 │   └── Dockerfile
 └── frontend/
     ├── src/
-    │   ├── environments/    # apiUrl je Build-Konfiguration
+    │   ├── environments/    # apiUrl per build configuration
     │   └── app/
-    │       ├── services/    # NoteListService (HTTP-Aufrufe)
-    │       ├── interfaces/  # Note-Interface
-    │       └── note-list/   # Komponenten
+    │       ├── services/    # NoteListService (HTTP calls)
+    │       ├── interfaces/  # Note interface
+    │       └── note-list/   # components
     └── Dockerfile
 ```
 
 ---
 
-## Konfiguration
+## Configuration
 
-Keine Zugangsdaten im Quellcode. Alles läuft über `.env`-Dateien, die per
-`.gitignore` ausgeschlossen sind. Vorlagen liegen als `.env.example` bei.
+No credentials in the source code. Everything runs through `.env` files, which
+are excluded via `.gitignore`. Templates ship as `.env.example`.
 
-| Datei | Gilt für | Im Repo |
+| File | Applies to | In the repo |
 | --- | --- | --- |
-| `.env` | Docker-Stack (Ports, Django) | nein |
-| `.env.example` | Vorlage dazu | ja |
-| `backend/.env` | Backend ohne Docker | nein |
-| `backend/.env.example` | Vorlage dazu | ja |
+| `.env` | Docker stack (ports, Django) | no |
+| `.env.example` | template for it | yes |
+| `backend/.env` | backend without Docker | no |
+| `backend/.env.example` | template for it | yes |
 
-Django lädt `backend/.env`, danach `backend/.env.local` (überschreibt). Für den
-Docker-Betrieb reicht die `.env` im Projektroot.
+Django loads `backend/.env`, then `backend/.env.local` (which overrides). For
+Docker the `.env` in the project root is enough.
 
-| Variable | Default | Zweck |
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `DJANGO_SECRET_KEY` | — | Signiert Sessions und CSRF-Tokens |
-| `DJANGO_DEBUG` | `1` | Debug-Modus (`0` schaltet ab) |
-| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Erlaubte Hosts, kommagetrennt |
-| `DJANGO_DB_PATH` | `backend/db.sqlite3` | Pfad zur SQLite-Datei |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200` | Erlaubte Frontend-Origins |
-| `CSRF_TRUSTED_ORIGINS` | `https://da-notes.larsbeck.dev` | Öffentliche HTTPS-Adressen hinter dem Proxy |
-| `BACKEND_PORT` | `8000` | Host-Port des Backends (nur Docker) |
-| `FRONTEND_PORT` | `4200` | Host-Port des Frontends (nur Docker) |
+| `DJANGO_SECRET_KEY` | — | Signs sessions and CSRF tokens |
+| `DJANGO_DEBUG` | `1` | Debug mode (`0` turns it off) |
+| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Allowed hosts, comma-separated |
+| `DJANGO_DB_PATH` | `backend/db.sqlite3` | Path to the SQLite file |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,http://127.0.0.1:4200` | Allowed frontend origins |
+| `CSRF_TRUSTED_ORIGINS` | `https://da-notes.larsbeck.dev` | Public HTTPS addresses behind the proxy |
+| `BACKEND_PORT` | `8000` | Host port of the backend (Docker only) |
+| `FRONTEND_PORT` | `4200` | Host port of the frontend (Docker only) |
 
-`DJANGO_SECRET_KEY` hat bewusst keinen Default. Bei `DEBUG=1` greift ein
-Wegwerf-Key, bei `DEBUG=0` bricht der Start ab — so kann kein fehlender Key
-unbemerkt in Produktion landen. Neuen Key erzeugen:
+`DJANGO_SECRET_KEY` deliberately has no default. With `DEBUG=1` a throwaway key
+kicks in, with `DEBUG=0` startup aborts — that way a missing key can never
+silently reach production. Generate a new key:
 
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-### Port ändern
+### Changing the port
 
-`BACKEND_PORT` in der `.env` setzen und dieselbe Zahl in
-`frontend/src/environments/environment.development.ts` als `apiUrl` eintragen.
-Beide Stellen müssen übereinstimmen, weil die Requests im Browser laufen und
-nicht im Container-Netzwerk.
-
----
-
-## Hinweise zum Docker-Setup
-
-- **Hot Reload** funktioniert in beiden Containern. Quellcode ist per Volume
-  gemountet; das Frontend nutzt Polling, damit File-Watching unter Windows
-  zuverlässig greift.
-- **Die Datenbank liegt in einem Named Volume** (`/app/data/db.sqlite3`), nicht
-  im gemounteten Quellordner. Deine lokale `backend/db.sqlite3` bleibt davon
-  unberührt — beide Setups haben getrennte Daten.
-- **Der Browser spricht direkt mit dem Host-Port**, nicht mit dem
-  Container-Hostnamen. Die HTTP-Requests laufen im Browser des Nutzers, nicht im
-  Container, deshalb wird über die auf den Host gemappten Ports kommuniziert.
+Set `BACKEND_PORT` in the `.env` and enter the same number as `apiUrl` in
+`frontend/src/environments/environment.development.ts`. Both places have to
+match, because the requests run in the browser and not in the container network.
 
 ---
 
-## Betrieb hinter einer Domain
+## Notes on the Docker setup
 
-Das `prod`-Profil kompiliert Angular und liefert das Ergebnis über nginx aus.
-Dieser Container reicht `/notes/` und `/admin/` selbst an Django weiter, deshalb
-muss der vorgelagerte Webserver nur auf einen einzigen Port weiterleiten.
+- **Hot reload** works in both containers. The source code is mounted as a
+  volume; the frontend uses polling so that file watching works reliably on
+  Windows.
+- **The database lives in a named volume** (`/app/data/db.sqlite3`), not in the
+  mounted source folder. Your local `backend/db.sqlite3` stays untouched — both
+  setups have separate data.
+- **The browser talks to the host port directly**, not to the container
+  hostname. The HTTP requests run in the user's browser, not in the container,
+  which is why communication goes through the ports mapped onto the host.
+
+---
+
+## Running behind a domain
+
+The `prod` profile compiles Angular and serves the result through nginx. That
+container forwards `/notes/` and `/admin/` to Django itself, so the upstream web
+server only has to forward to a single port.
 
 ```bash
 docker compose --profile prod up -d --build
 ```
 
-Beim vorgelagerten nginx (etwa über ISPConfig) genügt damit ein Block:
+For the upstream nginx (for example via ISPConfig) a single block is enough:
 
 ```nginx
 location ~ / {
@@ -231,73 +230,73 @@ location ~ / {
 }
 ```
 
-Die öffentliche Adresse muss in `CSRF_TRUSTED_ORIGINS` stehen, sonst lehnt
-Django schreibende Zugriffe ab. Der Header `X-Forwarded-Proto` ist nötig, damit
-Django die extern terminierte TLS-Verbindung erkennt.
+The public address has to be listed in `CSRF_TRUSTED_ORIGINS`, otherwise Django
+rejects writing requests. The `X-Forwarded-Proto` header is required so that
+Django recognizes the externally terminated TLS connection.
 
-Der Dev-Server aus dem `dev`-Profil eignet sich nicht für eine öffentliche
-Domain: Vite lädt Module über interne `/@fs/`-Pfade und blockt fremde Hosts.
+The dev server from the `dev` profile is not suitable for a public domain: Vite
+loads modules through internal `/@fs/` paths and blocks foreign hosts.
 
-### Profile nicht verwechseln
+### Do not mix up the profiles
 
-Beide Frontend-Container belegen denselben Host-Port (`FRONTEND_PORT`), deshalb
-vor einem Profilwechsel den alten Container entfernen:
+Both frontend containers occupy the same host port (`FRONTEND_PORT`), so remove
+the old container before switching profiles:
 
 ```bash
-docker compose ps                    # welches Image läuft?
+docker compose ps                    # which image is running?
 docker compose stop frontend && docker compose rm -f frontend
 docker compose --profile prod up -d --build
 ```
 
-`da-notes-frontend` ist das Dev-Image, `da-notes-frontend-prod` das Produktions-
-Image. Nach jeder Änderung unter `frontend/src` muss für den Domain-Betrieb neu
-gebaut werden.
+`da-notes-frontend` is the dev image, `da-notes-frontend-prod` the production
+image. After every change under `frontend/src` a rebuild is required for domain
+operation.
 
-Läuft versehentlich `dev` hinter der Domain, zeigt sich ein verwirrendes Bild:
-Über die IP mit sichtbarem Port 4200 funktioniert die App, über die Domain
-nicht. Grund ist `environment.development.ts` — bei sichtbarem Port 4200 geht
-die Anfrage direkt ans Backend, hinter dem Proxy dagegen an den relativen Pfad
-`/notes/`, für den der Dev-Server nur `index.html` liefert.
+If `dev` accidentally runs behind the domain, the symptoms are confusing: via
+the IP with a visible port 4200 the app works, via the domain it does not. The
+reason is `environment.development.ts` — with a visible port 4200 the request
+goes straight to the backend, behind the proxy it goes to the relative path
+`/notes/`, for which the dev server only serves `index.html`.
 
-Bei Domain-Problemen zuerst lokal auf dem Docker-Host prüfen, um Repo-Seite und
-Proxy-Seite zu trennen:
+For domain problems, check locally on the Docker host first to separate the repo
+side from the proxy side:
 
 ```bash
 curl -I -H "Host: da-notes.larsbeck.dev" http://localhost:4200/notes/
 ```
 
-Erwartet wird `Content-Type: application/json`. Kommt `text/html`, läuft das
-falsche Profil.
+Expected is `Content-Type: application/json`. If `text/html` comes back, the
+wrong profile is running.
 
 ---
 
-## Admin-Zugang
+## Admin access
 
 ```bash
 # Docker
 docker compose exec backend python manage.py createsuperuser
 
-# lokal
+# local
 cd backend && python manage.py createsuperuser
 ```
 
-Danach unter <http://localhost:8000/admin/> anmelden.
+Then sign in at <http://localhost:8000/admin/>.
 
 ---
 
-## Sicherheitshinweis
+## Security note
 
-Dieses Projekt ist ein **Lernprojekt**. Geheimnisse liegen ausschließlich in
-`.env`-Dateien, die nicht im Repository sind. Für einen echten Deploy fehlt
-trotzdem mindestens:
+This project is a **learning project**. Secrets live exclusively in `.env`
+files, which are not in the repository. For a real deployment it is still
+missing at least:
 
-- `DEBUG` ist standardmäßig aktiv und muss in Produktion auf `0`
-- Die API hat keine Authentifizierung — jeder kann alle Notizen lesen und ändern
-- SQLite eignet sich nicht für parallelen Produktionsbetrieb
-- Der in der Git-Historie enthaltene Alt-Key aus `settings.py` sollte als
-  kompromittiert gelten und niemals produktiv verwendet werden
+- `DEBUG` is on by default and has to be `0` in production
+- The API has no authentication — anyone can read and change all notes
+- SQLite is not suitable for concurrent production use
+- The old key from `settings.py` contained in the git history should be treated
+  as compromised and must never be used in production
 
-> **Beim Umstellen auf `DJANGO_DEBUG=0`** muss `DJANGO_ALLOWED_HOSTS` in der
-> `.env` die öffentliche Domain enthalten. Solange `DEBUG=1` gilt, überschreibt
-> `settings.py` die Liste mit `['*']` — ein fehlender Eintrag fällt deshalb erst
-> auf, wenn Django plötzlich mit `400 Bad Request` antwortet.
+> **When switching to `DJANGO_DEBUG=0`**, `DJANGO_ALLOWED_HOSTS` in the `.env`
+> has to contain the public domain. As long as `DEBUG=1` holds, `settings.py`
+> overrides the list with `['*']` — a missing entry therefore only shows up once
+> Django suddenly answers with `400 Bad Request`.
